@@ -21,6 +21,7 @@ class App extends Component {
       <React.Fragment>
         <Route
           path="/"
+          exact
           render={props => (
             <React.Fragment>
               <Navbar />
@@ -32,6 +33,7 @@ class App extends Component {
         />
         <Route
           path="/designer"
+          exact
           component={() => (window.location = "https://zhuorandeng.com")}
         />
         <Route
