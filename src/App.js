@@ -22,7 +22,24 @@ class App extends Component {
 
   render() {
     if (this.state.isLoading) {
-      return <Spinner />;
+      return (
+        <div
+          style={{
+            position: absolute,
+            margin: auto,
+            top: 0,
+            right: 0,
+            bottom: 0,
+            left: 0,
+            width: "100px",
+            height: "100px",
+            backgroundColor: "white",
+            borderRadius: "3px"
+          }}
+        >
+          <Spinner />;
+        </div>
+      );
     }
     return (
       <React.Fragment>
