@@ -9,14 +9,21 @@ import Publish from "./components/publish/Publish";
 import Footer from "./components/footer/footer";
 import About from "./components/about/about";
 import UserProfile from "./components/userProfile/userProfile";
+import Spinner from "./components/UI/Spinner/Spinner";
 
 class App extends Component {
-  likeHandler = id => {
-    this.state.posts.filter(post => post.id === id);
-    this.setState({});
+  state = {
+    isLoading: true
   };
 
+  componentDidMount() {
+    this.setState({ isLoading: false });
+  }
+
   render() {
+    if (this.state.isLoading) {
+      return <Spinner />;
+    }
     return (
       <React.Fragment>
         <Route
