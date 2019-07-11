@@ -5,7 +5,7 @@ import Comments from "./comment/comments";
 import { connect } from "react-redux";
 import axios from "../axios-blogs";
 import withHandler from "./UI/ErrorHandler/ErrorHandler";
-import Share from './share/share'
+import Share from "./share/share";
 
 class Blog extends Component {
   constructor(props) {
@@ -19,7 +19,7 @@ class Blog extends Component {
       username: "",
       userID: "",
       content: "",
-      title: "",
+      title: ""
     };
 
     this.handleLike = this.handleLike.bind(this);
@@ -75,18 +75,19 @@ class Blog extends Component {
             headers
           )
           .then(res => console.log("delete"))
-      : axios.post(
-          `${process.env.REACT_APP_BACKEND_SERVER}/api/users/likes/${
-            this.props.userID
-          }`,
-          { postID: this.props.match.params.id },
-          headers
-        )
-        .then(res => console.log("post"))
-        .catch(error => {
-          console.log(error);
-          console.log(error.message);
-        })
+      : axios
+          .post(
+            `${process.env.REACT_APP_BACKEND_SERVER}/api/users/likes/${
+              this.props.userID
+            }`,
+            { postID: this.props.match.params.id },
+            headers
+          )
+          .then(res => console.log("post"))
+          .catch(error => {
+            console.log(error);
+            console.log(error.message);
+          });
 
     //handling like# in Post route
     //catch here to revert the change
@@ -98,10 +99,11 @@ class Blog extends Component {
         { liked: liked },
         headers
       )
-      .catch(() => {this.props.handleLike(this.props.match.params.id, !liked);
-                    console.log("catch")});
-
-    this.props.handleLike(this.props.match.params.id, liked);
+      .then(() => this.props.handleLike(this.props.match.params.id, liked))
+      .catch(() => {
+        this.props.handleLike(this.props.match.params.id, !liked);
+        console.log("catch");
+      });
   };
 
   render() {

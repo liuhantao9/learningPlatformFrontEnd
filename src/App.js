@@ -9,7 +9,6 @@ import Publish from "./components/publish/Publish";
 import Footer from "./components/footer/footer";
 import About from "./components/about/about";
 import UserProfile from "./components/userProfile/userProfile";
-import Spinner from "./components/UI/Spinner/Spinner";
 
 class App extends Component {
   componentDidMount() {
