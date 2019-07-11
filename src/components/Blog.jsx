@@ -99,11 +99,11 @@ class Blog extends Component {
         { liked: liked },
         headers
       )
-      .then(() => this.props.handleLike(this.props.match.params.id, liked))
       .catch(() => {
         this.props.handleLike(this.props.match.params.id, !liked);
-        console.log("catch");
       });
+
+    this.props.handleLike(this.props.match.params.id, liked);
   };
 
   render() {

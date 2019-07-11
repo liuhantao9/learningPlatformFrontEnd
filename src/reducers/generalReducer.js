@@ -3,7 +3,7 @@ const initialState = {
   signupOpen: false,
   loginOpen: false,
   contactUsOpen: false,
-  shareOpen:false,
+  shareOpen: false,
   username: "",
   userID: "",
   likes: {},
@@ -11,7 +11,7 @@ const initialState = {
   comments: [],
   replies: [],
   myPosts: [],
-  menu_class: ''
+  menu_class: ""
 };
 
 const reducer = (state = initialState, action) => {
@@ -59,13 +59,13 @@ const reducer = (state = initialState, action) => {
     return {
       ...state,
       shareOpen: !state.shareOpen
-    }
+    };
   }
   if (action.type === "TOGGLEMENUCLASS") {
     return {
       ...state,
-      menu_class: (state.menu_class === '') ? 'toggled' : ''
-    }
+      menu_class: state.menu_class === "" ? "toggled" : ""
+    };
   }
   if (action.type === "GETBLOG") {
     let tempComments = [];
@@ -87,7 +87,6 @@ const reducer = (state = initialState, action) => {
   if (action.type === "ADDCOMMENT") {
     let temp = [...state.comments];
     temp.push(action.comment);
-    console.log(action.comment);
 
     return {
       ...state,
