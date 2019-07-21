@@ -1,4 +1,4 @@
-const initialState = {
+let initialState = {
   loggedIn: false,
   signupOpen: false,
   loginOpen: false,
@@ -6,12 +6,12 @@ const initialState = {
   shareOpen: false,
   username: "",
   userID: "",
-  likes: {},
   likedPosts: [],
   comments: [],
   replies: [],
   myPosts: [],
-  menu_class: ""
+  menu_class: "",
+  avatar: ""
 };
 
 const reducer = (state = initialState, action) => {
@@ -22,15 +22,23 @@ const reducer = (state = initialState, action) => {
       userID: action.userID,
       username: action.username,
       likedPosts: action.likedPosts,
-      myPosts: action.myPosts
+      myPosts: action.myPosts,
+      avatar: action.avatar
     };
   }
   if (action.type === "LOGOUT") {
     return {
       ...state,
       loggedIn: false,
+      signupOpen: false,
+      loginOpen: false,
+      contactUsOpen: false,
+      shareOpen: false,
       username: "",
-      userID: ""
+      userID: "",
+      likedPosts: [],
+      myPosts: [],
+      menu_class: ""
     };
   }
   if (action.type === "SIGNUPMODAL") {
@@ -103,33 +111,22 @@ const reducer = (state = initialState, action) => {
       replies: temp
     };
   }
-  if (action.type === "GETHITS") {
-    let tempLikes = { ...state.likes };
-
-    action.hits.map(hit => {
-      //if the hit not in current memory, then we use the data
-      if (!(hit.objectID in tempLikes)) {
-        tempLikes[hit.objectID] = hit.likes;
-      }
-    });
-
-    return {
-      ...state,
-      likes: tempLikes
-    };
-  }
   if (action.type === "HANDLELIKE") {
-    const delta = action.liked ? -1 : 1;
-    let newLikePosts = [...state.likedPosts];
-    action.liked
-      ? (newLikePosts = newLikePosts.filter(post => post !== action.id))
-      : newLikePosts.push(action.id);
+    //remove duplicates
+    let newLikePosts = new Set([...state.likedPosts]);
+    action.liked ? newLikePosts.delete(action.id) : newLikePosts.add(action.id);
     return {
       ...state,
-      likes: { ...state.likes, [action.id]: state.likes[action.id] + delta },
-      likedPosts: newLikePosts
+      likedPosts: [...newLikePosts]
     };
   }
+  if (action.type === "UPDATEAVATAR") {
+    return {
+      ...state,
+      avatar: action.avatar
+    };
+  }
+
   if (action.type === "PUBLISHEDNEWPOST") {
     return {
       ...state,

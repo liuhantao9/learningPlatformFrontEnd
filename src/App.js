@@ -11,7 +11,8 @@ import About from "./components/about/about";
 import UserProfile from "./components/userProfile/userProfile";
 
 class App extends Component {
-  componentDidMount() {
+  async componentDidMount() {
+    // await new Promise(resolve => setTimeout(resolve, 100000));
     const ele = document.getElementById("ipl-progress-indicator");
     if (ele) {
       // fade out
@@ -19,7 +20,6 @@ class App extends Component {
       ele.outerHTML = "";
     }
   }
-
   render() {
     return (
       <React.Fragment>
@@ -45,7 +45,11 @@ class App extends Component {
           exact
           component={props => <Blog {...props} />}
         />
-        <Route path="/contact" exact component={ContactUs} />
+        <Route
+          path="/contact"
+          exact
+          component={props => <ContactUs {...props} />}
+        />
         <Route
           path="/publish"
           exact

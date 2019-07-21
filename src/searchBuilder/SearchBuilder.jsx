@@ -17,22 +17,45 @@ const searchClient = algoliasearch(
 );
 
 class SearchBuilder extends Component {
+  state = {
+    refresh: false
+  };
+
+  //refresh periodically
+  // componentDidMount() {
+  //   this.interval = setInterval(
+  //     () =>
+  //       this.setState({ refresh: true }, () => {
+  //         this.setState({ refresh: false });
+  //       }),
+  //     5000
+  //   );
+  // }
+  // componentWillUnmount() {
+  //   clearInterval(this.interval);
+  // }
+
+  refresh = () => {
+    this.setState({ refresh: true }, () => {
+      this.setState({ refresh: false });
+    });
+  };
   render() {
     return (
       <div>
         <InstantSearch
-          indexName="posts"
+          indexName="Test"
           searchClient={searchClient}
-          refresh
+          refresh={this.state.refresh}
         >
           <Configure hitsPerPage={6} analytics={true} distinct />
           <div style={{ justifyContent: "center", display: "flex" }}>
             <SortBy
               defaultRefinement="posts"
               items={[
-                { 
-                  value: "posts", 
-                  label: "Sorted By" 
+                {
+                  value: "posts",
+                  label: "Sorted By"
                 },
                 {
                   value: "posts_post_date_decs",
@@ -46,13 +69,14 @@ class SearchBuilder extends Component {
                   value: "posts_likes_desc",
                   label: "Likes desc."
                 },
-                { 
-                  value: "posts_likes_asc", 
-                  label: "Likes asc." 
+                {
+                  value: "posts_likes_asc",
+                  label: "Likes asc."
                 }
               ]}
             />
             <SearchBox />
+            <button onClick={this.refresh}> Refresh</button>
           </div>
           <CustomHits />
           <Pagination
