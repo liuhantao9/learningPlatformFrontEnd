@@ -1,8 +1,10 @@
 import React, { Component } from "react";
-import axios from "../axios-blogs";
+import axios from "../axios/axios-blogs";
 import Modal from "react-responsive-modal";
 import Spinner from "./UI/Spinner/Spinner";
+import { Link } from "react-router-dom";
 import { connect } from "react-redux";
+
 class Login extends Component {
   state = {
     password: "",
@@ -19,7 +21,7 @@ class Login extends Component {
     this.setState({ [type]: e.target.value });
   };
 
-  handleSubmit = e => {
+  handleSubmit = async e => {
     e.preventDefault();
 
     this.setState({ loading: true });
@@ -30,31 +32,81 @@ class Login extends Component {
         password: password
       }
     };
-    axios
-      .post("/api/users/login", user)
-      .then(res => {
-        this.setState({ loading: false, email: "", password: "" });
-        this.props.handleLogIn(
-          res.data.username,
-          res.data.id,
-          res.data.likedPosts,
-          res.data.myPosts,
-          res.data.avatar
-        );
-        //close modal
-        this.props.onSwitchLoginModal();
-        //save tokens
-        localStorage.setItem("token", res.data.token);
-      })
-      .catch(err => {
-        //Here we pass in status code into error, and we handle
-        //error codes by err.response
-        console.log(err);
-        this.setState({
-          loading: false,
-          errStatus: err.response.status
-        });
+
+    try {
+      let res = await axios.post("/api/users/login", user, { headers: "" });
+      let data = res.data;
+      // asyn function that retrieve all details about likedPosts and myPosts
+      let allPostDetail = await this.fetchAllPostDetails(data);
+      let likedPostsDetail = allPostDetail[0];
+      let myPostsDetail = allPostDetail[1];
+      this.setState({ loading: false, email: "", password: "" });
+      //remove memeory likes first then add back in
+      this.props.handleLogIn(
+        data.username,
+        data.id,
+        data.likedPosts,
+        data.myPosts,
+        data.avatar,
+        likedPostsDetail,
+        myPostsDetail
+      );
+      //close modal
+      this.props.onSwitchLoginModal();
+      //save tokens
+      localStorage.setItem("token", res.data.token);
+    } catch (err) {
+      //Here we pass in status code into error, and we handle
+      //error codes by err.response
+      console.log(err);
+      this.setState({
+        loading: false,
+        errStatus: err.response.status
       });
+    }
+  };
+
+  // responsible for fetching data about my posts and liked posts from
+  // the database. the output is later used for setting states in redux
+  fetchAllPostDetails = async data => {
+    const likedPosts = data.likedPosts.reverse();
+    const myPosts = data.myPosts.reverse();
+    let singleLikedPostDetailPromise = [];
+    let singleMyPostDetailPromise = [];
+    try {
+      for (var i = 0; i < likedPosts.length; i++) {
+        let l_promise = this.fetchSinglePostDetail(likedPosts[i]);
+        if (l_promise === undefined || l_promise === null) {
+        } else {
+          singleLikedPostDetailPromise.unshift(l_promise);
+        }
+      }
+      for (var j = 0; j < myPosts.length; j++) {
+        let m_promise = this.fetchSinglePostDetail(myPosts[j]);
+        if (m_promise === undefined || m_promise === null) {
+        } else {
+          singleMyPostDetailPromise.unshift(m_promise);
+        }
+      }
+      let allLikedPostDetails = Promise.all(singleLikedPostDetailPromise);
+      let allmyPostDetails = Promise.all(singleMyPostDetailPromise);
+      let allPostDetails = await Promise.all([
+        allLikedPostDetails,
+        allmyPostDetails
+      ]);
+      return allPostDetails;
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  fetchSinglePostDetail = async postID => {
+    try {
+      let userDetail = await axios.get(`/api/posts/${postID}`, { headers: "" });
+      return userDetail.data;
+    } catch (error) {
+      console.log(error);
+    }
   };
 
   render() {
@@ -122,6 +174,11 @@ class Login extends Component {
             </div>
           </div>
           {userError()}
+          <div className="forgetPwd">
+            <Link to="/reset-password">
+              <p>Forget Password?</p>
+            </Link>
+          </div>
           <div
             className="field is-grouped"
             style={{ justifyContent: "center" }}
@@ -171,16 +228,27 @@ const mapStateToProps = state => {
 
 const mapDispatchToProps = dispatch => {
   return {
-    handleLogIn: (username, userID, likedPosts, myPosts, avatar) =>
+    handleLogIn: (
+      username,
+      userID,
+      likedPosts,
+      myPosts,
+      avatar,
+      likedPostsDetail,
+      myPostsDetail
+    ) =>
       dispatch({
         type: "LOGIN",
         username: username,
         userID: userID,
         likedPosts: likedPosts,
         myPosts: myPosts,
-        avatar: avatar
+        avatar: avatar,
+        likedPostsDetail: likedPostsDetail,
+        myPostsDetail: myPostsDetail
       }),
-    onSwitchLoginModal: () => dispatch({ type: "LOGINMODAL" })
+    onSwitchLoginModal: () => dispatch({ type: "LOGINMODAL" }),
+    removeLikes: () => dispatch({ type: "REMOVELIKES" })
   };
 };
 

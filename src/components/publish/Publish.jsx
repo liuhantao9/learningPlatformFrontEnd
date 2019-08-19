@@ -1,8 +1,9 @@
-import axios from "../../axios-blogs";
+import axios from "../../axios/axios-blogs";
 import React, { Component } from "react";
 import Editor from "../editor/Editor";
 import { Link } from "react-router-dom";
-import image from "../../assets/img/logo.jpg";
+import getTimeFormat from "../../utils/getTimeFormat";
+import image from "../../assets/img/logo1.jpg";
 import DropDown from "../dropdown/dropdown";
 import Spinner from "../UI/Spinner/Spinner";
 import Modal from "react-responsive-modal";
@@ -13,7 +14,8 @@ import {
   openDisplay,
   closeDisplay,
   addTag,
-  removeTag
+  removeTag,
+  handlePosted
 } from "../../actions/tagActions";
 
 class Publish extends Component {
@@ -26,32 +28,58 @@ class Publish extends Component {
       posted: false,
       content: "",
       title: "",
-      loading: false
+      loading: false,
+      tagError: false,
+      updateTime: ""
     };
 
-    this.handlePost = this.handlePost.bind(this);
+    this.handlePostCheck = this.handlePostCheck.bind(this);
+    this.handleFinalPost = this.handleFinalPost.bind(this);
     this.successPosted = this.successPosted.bind(this);
     this.updateContent = this.updateContent.bind(this);
+    this.getContent = this.getContent.bind(this);
+    this.showUpdateTime = this.showUpdateTime.bind(this);
   }
 
-  handlePost() {
-    const token = localStorage.getItem("token");
+  showUpdateTime = () => {
+    const currTime = new Date().toTimeString();
+    this.setState({ updateTime: currTime });
+  };
 
+  getContent = () => {
+    const token = localStorage.getItem("token");
+    const headers = {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Token ${token}`,
+        withCredentials: true
+      }
+    };
+    axios.get(`/api/users/draft/${this.props.userID}`, headers).then(res => {
+      console.log(res.data);
+      this.setState({ content: res.data.content });
+    });
+  };
+
+  handleFinalPost = async () => {
     const post = {
       author: this.props.username,
       title: this.state.title,
       content: this.state.content,
-      tags: this.props.tagReducer.tags || []
+      tags: this.props.tagReducer.tags || [],
+      userId: this.props.userID,
+      avatar:
+        this.props.avatar || "https://bulma.io/images/placeholders/128x128.png"
     };
     this.setState({ loading: true });
-
+    const token = localStorage.getItem("token");
     const headers = {
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Token ${token}`
+        Authorization: `Token ${token}`,
+        withCredentials: true
       }
     };
-
     axios
       .post("/api/posts", post, headers)
       .then(res => {
@@ -62,21 +90,40 @@ class Publish extends Component {
             headers
           )
           .then(res => {
-            console.log(res);
-            this.setState({ loading: false });
+            //cannot divide the call into two setState calls
+            this.setState({ loading: false, posted: true });
           })
           .catch(err => {
             console.log(err);
+            this.setState({ loading: false });
           });
-        var newMyPosts = this.props.myPosts;
-        newMyPosts.push(res.data._id);
-        this.props.handleMyPosts(newMyPosts);
+        var updatedMyPosts = [...this.props.myPosts];
+        updatedMyPosts.push(res.data._id);
+        var updatedMyPostsDetail = [...this.props.myPostsDetail];
+        updatedMyPostsDetail.push(res.data);
+        this.props.handleUpdatedMyPosts(updatedMyPostsDetail, updatedMyPosts);
       })
       .catch(err => {
-        console.log(err);
+        this.setState({ loading: false });
       });
-    this.setState({ posted: true });
-  }
+
+    this.props.handlePosted();
+  };
+
+  handlePostCheck = e => {
+    e.preventDefault();
+    if (
+      this.props.tagReducer.tags.length === 0 ||
+      this.props.tagReducer.tags.length >= 4
+    ) {
+      this.setState({
+        ...this.state,
+        tagError: true
+      });
+    } else {
+      this.handleFinalPost();
+    }
+  };
 
   updateContent = value => {
     this.setState({ content: value });
@@ -86,8 +133,16 @@ class Publish extends Component {
     this.setState({ warning: true });
   };
 
+  handlePostCancel = () => {
+    this.props.handlePosted();
+  };
+
   onCloseModal = () => {
-    this.setState({ warning: false });
+    this.setState({
+      ...this.state,
+      warning: false,
+      tagError: false
+    });
   };
 
   handleTitle = e => {
@@ -162,80 +217,85 @@ class Publish extends Component {
 
     return (
       <React.Fragment>
-        <div>
-          <nav
-            className="navbar"
-            role="navigation"
-            aria-label="main navigation"
-          >
-            <div className="navbar-brand">
-              <div className="navbar-item">
-                <Link to="/">
-                  <img src={image} width="112" height="48" alt="logo" />
-                </Link>
-              </div>
-            </div>
-
-            <div id="navbarBasicExample" className="navbar-menu">
-              <div className="navbar-start" />
-              <DropDown lists={["Save", "Draft"]} />
-            </div>
-          </nav>
-        </div>
         <div style={{ width: "80%", margin: "auto auto" }}>
           {this.state.loading ? (
-            <div style={{ textAlign: "center", paddingTop: "25%", paddingBottom: "25%" }}>
+            <div
+              style={{
+                textAlign: "center",
+                paddingTop: "25%",
+                paddingBottom: "25%"
+              }}
+            >
               <Spinner />
             </div>
           ) : this.state.posted ? (
             this.successPosted()
           ) : (
-                <React.Fragment>
-                  <form onSubmit={this.handlePost}>
-                    <label>Title</label>
-                    <input
-                      className="input is-rounded"
-                      type="text"
-                      required
-                      value={this.state.title}
-                      onChange={this.handleTitle}
-                    />
-                    <div>
-                      <br />
-                      <Editor
-                        updateContent={this.updateContent}
-                        value={this.state.content}
-                      />
-                    </div>
-                    {selection}
-                    <label>Tags</label>
-                    <TagSearch
-                      hitsDisplay={this.props.tagReducer.hitsDisplay}
-                      tags={this.props.tagReducer.tags}
-                      handleSelect={tag => this.props.addTag(tag)}
-                      handleRemoveItem={tag => this.props.removeTag(tag)}
-                      openDisplay={() => this.props.openDisplay()}
-                      closeDisplay={() => this.props.closeDisplay()}
-                      styles={styles}
-                    />
-                    <br />
-                    <div className="level-left">
-                      <button
-                        className="button is-primary level-item"
-                        type="submit"
-                      >
-                        Post
+            <React.Fragment>
+              <form onSubmit={this.handlePostCheck}>
+                <label>Title</label>
+                <div className="level">
+                  <input
+                    className="input is-rounded"
+                    type="text"
+                    required
+                    placeholder="Title..."
+                    minLength="8"
+                    maxLength="50"
+                    value={this.state.title}
+                    onChange={this.handleTitle}
+                  />
+
+                  <DropDown
+                    lists={["Get Last Draft"]}
+                    funcs={[this.getContent]}
+                  />
+                </div>
+                <div>
+                  <Editor
+                    updateContent={this.updateContent}
+                    value={this.state.content}
+                    userID={this.props.userID}
+                    showUpdateTime={this.showUpdateTime}
+                  />
+                  <span style={{ fontSize: "13px" }}>
+                    {this.state.updateTime
+                      ? `Saved at ${this.state.updateTime}`
+                      : ""}
+                  </span>
+                </div>
+                <br />
+                {selection}
+                <hr />
+                <label>Tags</label>
+                <TagSearch
+                  hitsDisplay={this.props.tagReducer.hitsDisplay}
+                  tags={this.props.tagReducer.tags}
+                  handleSelect={tag => this.props.addTag(tag)}
+                  handleRemoveItem={tag => this.props.removeTag(tag)}
+                  openDisplay={() => this.props.openDisplay()}
+                  closeDisplay={() => this.props.closeDisplay()}
+                  styles={styles}
+                />
+                <br />
+                <div className="level-left">
+                  <button
+                    className="button is-primary level-item"
+                    type="submit"
+                  >
+                    Post
                   </button>
-                      <button
-                        className="button is-primary level-item"
-                        onClick={this.handleCancel}
-                      >
-                        Cancel
+                  <button
+                    className="button is-primary level-item"
+                    type="button"
+                    onClick={this.handleCancel}
+                  >
+                    Cancel
                   </button>
-                    </div>
-                  </form>
-                </React.Fragment>
-              )}
+                </div>
+              </form>
+            </React.Fragment>
+          )}
         </div>
         <Modal
           className="modal-lg"
@@ -248,9 +308,31 @@ class Publish extends Component {
               <strong>Warning</strong>
             </h1>
             <p style={{ color: "red" }}>Your Post Will Not Be Saved</p>
-            <Link className="button is-link" to="/">
+            <Link
+              className="button is-link"
+              onClick={this.handlePostCancel}
+              to="/"
+            >
               Okay, I Got It
             </Link>
+          </div>
+        </Modal>
+        <Modal
+          className="modal-lg"
+          open={this.state.tagError}
+          onClose={this.onCloseModal}
+          center
+        >
+          <div>
+            <h1>
+              <strong>Warning</strong>
+            </h1>
+            <p style={{ color: "red" }}>
+              Please limit the number of the input tags from 1 to 3
+            </p>
+            <button className="button is-link" onClick={this.onCloseModal}>
+              Okay, I Got It
+            </button>
           </div>
         </Modal>
       </React.Fragment>
@@ -263,7 +345,9 @@ const mapStateToProps = state => {
     username: state.persistedReducer.username,
     tagReducer: state.tagReducer,
     userID: state.persistedReducer.userID,
-    myPosts: state.persistedReducer.myPosts
+    myPosts: state.persistedReducer.myPosts,
+    myPostsDetail: state.persistedReducer.myPostsDetail,
+    avatar: state.persistedReducer.avatar
   };
 };
 
@@ -281,10 +365,14 @@ const mapDispatchToProps = dispatch => {
     removeTag: tag => {
       dispatch(removeTag(tag));
     },
-    handleMyPosts: newMyPosts =>
+    handlePosted: () => {
+      dispatch(handlePosted());
+    },
+    handleUpdatedMyPosts: (updatedMyPostsDetail, updatedMyPosts) =>
       dispatch({
-        type: "PUBLISHEDNEWPOST",
-        myPosts: newMyPosts
+        type: "USERMYPOSTSUPDATED",
+        myPostsDetail: updatedMyPostsDetail,
+        myPosts: updatedMyPosts
       })
   };
 };

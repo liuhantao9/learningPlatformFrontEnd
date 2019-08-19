@@ -106,6 +106,7 @@
 
 #changableButton:hover {
   cursor: pointer;
+  box-shadow: 1px 1px 5px #bbbbbb, -1px -1px 5px #bbbbbb;
 }
 
 @media screen and (max-width: 1090px) {
@@ -169,7 +170,6 @@
     margin-left: -5px;
     margin-right: -2px;
     display: inline-block;
-    float: left;
   }
   #changableButton > p {
     display: inline-block

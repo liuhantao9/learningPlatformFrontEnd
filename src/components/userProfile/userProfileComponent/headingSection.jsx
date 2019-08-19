@@ -1,8 +1,7 @@
 import React from "react";
 import { connect } from "react-redux";
-import axios from "../../../axios-blogs";
-
-var faker = require("faker");
+import axios from "../../../axios/axios-blogs";
+import profile from "../../../assets/img/Portrait_Placeholder.png";
 
 class HeadingSection extends React.Component {
   state = {
@@ -19,8 +18,7 @@ class HeadingSection extends React.Component {
       var dataURL = reader.result;
       var output = document.getElementById("profile");
       output.src = dataURL;
-      output.width = 128;
-      output.height = 128;
+      output.width = "128px";
     };
     reader.readAsDataURL(e.target.files[0]);
   };
@@ -30,32 +28,29 @@ class HeadingSection extends React.Component {
       const data = new FormData();
       data.append("avatar", this.state.selectedFile);
       this.setState({ loading: true });
-
       const token = localStorage.getItem("token");
       const headers = {
         headers: {
+          "Content-Type": "application/json",
           Authorization: `Token ${token}`,
           withCredentials: true
         }
       };
       axios
-        .post(
-          `${process.env.REACT_APP_BACKEND_SERVER}/api/users/profile/${
-            this.props.userID
-          }`,
-          data,
-          headers
-        )
+        .patch(`/api/users/profile/${this.props.userId}`, data)
         .then(res => {
-          // then print response status
-          new Promise(resolve => setTimeout(resolve, 3000));
           this.setState({ loading: false });
-          console.log(res);
-          this.props.updateAvatar(res.data.avatar);
           this.setState({ selectedFile: null });
+          this.props.updateAvatar(res.data.avatar);
+          axios.patch(
+            `${process.env.REACT_APP_BACKEND_SERVER}/api/posts/avatar/${
+              this.props.userId
+            }`,
+            { avatar: this.props.avatar },
+            headers
+          );
         })
         .catch(err => {
-          console.log(err);
           this.setState({ loading: false });
           this.setState({ selectedFile: null });
         });
@@ -65,21 +60,21 @@ class HeadingSection extends React.Component {
     return (
       <div className="section profile-heading">
         <div className="columns is-mobile is-multiline">
-          <div className="column is-2">
-            <span
-              className="header-icon user-profile-image"
-              style={{ paddingLeft: "25%" }}
-            >
-              <img
-                id="profile"
-                alt=""
-                src={this.props.avatar}
-                width="128"
-                height="128"
-                style={{ filter: `blur(${this.state.loading ? 2 : 0}px)` }}
-              />
-              <div className="file is-small" style={{ paddingLeft: "25%" }}>
-                <label class="file-label">
+          <div
+            className="column is-2-tablet is-6-mobile name"
+            style={{ textAlign: "center" }}
+          >
+            <span className="header-icon user-profile-image">
+              <figure className="image is-square">
+                <img
+                  id="profile"
+                  src={this.props.avatar || profile}
+                  style={{ filter: `blur(${this.state.loading ? 2 : 0}px)` }}
+                  width="128px"
+                />
+              </figure>
+              <div className="file is-small">
+                <label class="file-label" style={{ margin: "auto" }}>
                   <input
                     class="file-input"
                     ode
@@ -99,18 +94,13 @@ class HeadingSection extends React.Component {
                 class={`button is-active is-small ${
                   this.state.loading ? "is-loading" : ""
                 }`}
-                style={{
-                  textAlign: "center",
-                  marginLeft: "43%",
-                  marginTop: "3%"
-                }}
                 onClick={this.handleUpload}
               >
                 Upload
               </a>
             </span>
           </div>
-          <div className="column is-6-tablet is-10-mobile name">
+          <div className="column is-6-tablet is-6-mobile name">
             <p>
               <span className="title is-bold">{this.props.username}</span>
               <br />
@@ -129,7 +119,7 @@ class HeadingSection extends React.Component {
               characters to ~500 at most though.
             </p>
           </div>
-          <div className="column is-2-tablet is-4-mobile has-text-centered" />
+          <div className="column is-1-tablet is-2-mobile has-text-centered" />
           <div className="column is-1-tablet is-4-mobile has-text-centered">
             <p className="stat-val">30</p>
             <p className="stat-key">reputation</p>
@@ -147,7 +137,7 @@ class HeadingSection extends React.Component {
 const mapStateToProps = state => {
   return {
     username: state.persistedReducer.username,
-    userID: state.persistedReducer.userID,
+    userId: state.persistedReducer.userID,
     avatar: state.persistedReducer.avatar
   };
 };
