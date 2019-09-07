@@ -9,7 +9,6 @@ class Login extends Component {
   state = {
     password: "",
     email: "",
-    errStatus: "",
     username: "",
     loading: false
   };
@@ -19,6 +18,10 @@ class Login extends Component {
       this.setState({ notMatched: false });
     }
     this.setState({ [type]: e.target.value });
+  };
+
+  handleResetPassword = () => {
+    this.props.onSwitchLoginModal();
   };
 
   handleSubmit = async e => {
@@ -48,6 +51,7 @@ class Login extends Component {
         data.likedPosts,
         data.myPosts,
         data.avatar,
+        data.bio,
         likedPostsDetail,
         myPostsDetail
       );
@@ -76,17 +80,11 @@ class Login extends Component {
     try {
       for (var i = 0; i < likedPosts.length; i++) {
         let l_promise = this.fetchSinglePostDetail(likedPosts[i]);
-        if (l_promise === undefined || l_promise === null) {
-        } else {
-          singleLikedPostDetailPromise.unshift(l_promise);
-        }
+        singleLikedPostDetailPromise.unshift(l_promise);
       }
       for (var j = 0; j < myPosts.length; j++) {
         let m_promise = this.fetchSinglePostDetail(myPosts[j]);
-        if (m_promise === undefined || m_promise === null) {
-        } else {
-          singleMyPostDetailPromise.unshift(m_promise);
-        }
+        singleMyPostDetailPromise.unshift(m_promise);
       }
       let allLikedPostDetails = Promise.all(singleLikedPostDetailPromise);
       let allmyPostDetails = Promise.all(singleMyPostDetailPromise);
@@ -103,9 +101,14 @@ class Login extends Component {
   fetchSinglePostDetail = async postID => {
     try {
       let userDetail = await axios.get(`/api/posts/${postID}`, { headers: "" });
-      return userDetail.data;
+      let userData = userDetail.data;
+      userData.deleted = false;
+      return userData;
     } catch (error) {
-      console.log(error);
+      return {
+        _id: postID,
+        deleted: true
+      };
     }
   };
 
@@ -129,6 +132,9 @@ class Login extends Component {
           break;
         case 478:
           body = "Email has not been verified";
+          break;
+        default:
+          break;
       }
       return <p className="help is-danger"> {body}</p>;
     };
@@ -175,9 +181,15 @@ class Login extends Component {
           </div>
           {userError()}
           <div className="forgetPwd">
-            <Link to="/reset-password">
-              <p>Forget Password?</p>
-            </Link>
+            <button
+              type="button"
+              className="button is-small is-light"
+              onClick={this.handleResetPassword}
+            >
+              <Link to="/reset-password">
+                <p>Forget Password?</p>
+              </Link>
+            </button>
           </div>
           <div
             className="field is-grouped"
@@ -234,6 +246,7 @@ const mapDispatchToProps = dispatch => {
       likedPosts,
       myPosts,
       avatar,
+      bio,
       likedPostsDetail,
       myPostsDetail
     ) =>
@@ -244,6 +257,7 @@ const mapDispatchToProps = dispatch => {
         likedPosts: likedPosts,
         myPosts: myPosts,
         avatar: avatar,
+        bio: bio,
         likedPostsDetail: likedPostsDetail,
         myPostsDetail: myPostsDetail
       }),

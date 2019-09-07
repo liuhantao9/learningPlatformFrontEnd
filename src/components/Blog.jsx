@@ -4,10 +4,8 @@ import ReactHtmlParser from "react-html-parser";
 import Comments from "./comment/comments";
 import { connect } from "react-redux";
 import axios from "../axios/axios-blogs";
-
 import { withRouter } from "react-router";
 import errorBoundary from "./UI/ErrorHandler/ErrorHandler";
-
 import Share from "./share/share";
 import Flexbox from "flexbox-react";
 
@@ -48,31 +46,6 @@ class Blog extends Component {
           tags: res.data.tags
         });
         this.props.getBlog(res.data);
-      })
-      .catch(err => {
-        if (err.response.status === 400) {
-          // retrieve the post id that has been deleted by the original aurthor
-          // to update a user's likedposts in database and redux
-          const token = localStorage.getItem("token");
-          const headers = {
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Token ${token}`,
-              withCredentials: true
-            }
-          };
-          axios
-            .delete(
-              `${process.env.REACT_APP_BACKEND_SERVER}/api/users/likes/${
-                this.props.userID
-              }?postID=${this.props.match.params.id}`,
-              headers
-            )
-            .then(res => {
-              this.props.handleLike(this.props.match.params.id, null, true);
-            })
-            .catch(err => console.log(err));
-        }
       });
   };
 
@@ -92,21 +65,24 @@ class Blog extends Component {
     //handling likeposts in User route
     const likePostPromise = LIKED
       ? axios.delete(
-          `/api/users/likes/${this.props.userID}?postID=${
-            this.props.match.params.id
-          }`,
-          headers
-        )
+        `/api/users/likes/${this.props.userID}?postID=${
+        this.props.match.params.id
+        }`,
+        headers
+      )
       : axios.post(
-          `/api/users/likes/${this.props.userID}`,
-          { postID: this.props.match.params.id },
-          headers
-        );
+        `/api/users/likes/${this.props.userID}`,
+        { postID: this.props.match.params.id },
+        headers
+      );
     //handling like# in Post route
     const likeNumberPromise = axios.patch(
       `/api/posts/likes/${this.props.match.params.id}`,
       { liked: LIKED },
       headers
+    ).then(res => {
+      console.log(res)
+    }
     );
 
     Promise.all([likeNumberPromise, likePostPromise]).catch(err => {
@@ -194,7 +170,7 @@ class Blog extends Component {
                       id="likeBtn"
                       className={`level-item has-text-centered button ${
                         LIKED ? " is-success" : ""
-                      }`}
+                        }`}
                       aria-label="like"
                       onClick={this.state.enableLike ? this.handleLike : null}
                     >
@@ -205,11 +181,14 @@ class Blog extends Component {
                   </div>
                   <hr />
                 </div>
-                <div id="comment" style={{
-                  paddingRight: "3%",
-                  paddingLeft: "3%", 
-                  paddingBottom: "2%" 
-                }}>
+                <div
+                  id="comment"
+                  style={{
+                    paddingRight: "3%",
+                    paddingLeft: "3%",
+                    paddingBottom: "2%"
+                  }}
+                >
                   <Comments blogID={this.props.match.params.id} />
                 </div>
               </div>

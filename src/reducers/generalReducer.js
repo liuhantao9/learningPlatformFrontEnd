@@ -1,4 +1,6 @@
-let initialState = {
+import getReputation from "../utils/getSumFromArray";
+
+const initialState = {
   loggedIn: false,
   signupOpen: false,
   loginOpen: false,
@@ -16,7 +18,11 @@ let initialState = {
   postType: "",
   menu_class: "",
   avatar: "",
-  likes: {}
+  likes: {},
+  piginationNumber: 1,
+  bio: "",
+  reputation: 0,
+  knowledge: 0
 };
 
 const reducer = (state = initialState, action) => {
@@ -30,7 +36,10 @@ const reducer = (state = initialState, action) => {
       myPosts: action.myPosts,
       avatar: action.avatar,
       likedPostsDetail: action.likedPostsDetail,
-      myPostsDetail: action.myPostsDetail
+      myPostsDetail: action.myPostsDetail,
+      bio: action.bio,
+      reputation: getReputation(action.myPostsDetail, "likes"),
+      knowledge: action.myPosts.length
     };
   }
   if (action.type === "LOGOUT") {
@@ -94,9 +103,12 @@ const reducer = (state = initialState, action) => {
       const { replies, ...clone } = comment;
       tempComments.push({ ...clone });
 
-      if (replies[0]) {
-        tempReplies.push({ ...replies[0], commentRef: comment._id });
+      for (const reply of replies) {
+        if (reply) {
+          tempReplies.push({ ...reply, commentRef: comment._id });
+        }
       }
+      return null;
     });
 
     return {
@@ -115,13 +127,21 @@ const reducer = (state = initialState, action) => {
     };
   }
 
+  if (action.type === "REFRESHLIKES") {
+    let temp = {};
+    return {
+      ...state,
+      likes: temp
+    };
+  }
+
   if (action.type === "HANDLELIKE") {
     let temp = { ...state.likes };
-
     action.hits.map(hit => {
       if (temp[hit.objectID] === undefined) {
         temp[hit.objectID] = hit.likes;
       }
+      return null;
     });
     return {
       ...state,
@@ -225,6 +245,18 @@ const reducer = (state = initialState, action) => {
     return {
       ...state,
       likes: {}
+    };
+  }
+  if (action.type === "PIGINATIONNUMBER") {
+    return {
+      ...state,
+      piginationNumber: action.currRefinement
+    };
+  }
+  if (action.type === "UPDATEBIO") {
+    return {
+      ...state,
+      bio: action.bio
     };
   }
   return state;

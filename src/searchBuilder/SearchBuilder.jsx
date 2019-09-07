@@ -4,12 +4,12 @@ import "instantsearch.css/themes/algolia.css";
 import {
   InstantSearch,
   SearchBox,
-  Pagination,
   SortBy,
   Configure
 } from "react-instantsearch-dom";
-
+import { connect } from "react-redux";
 import CustomHits from "./customHits";
+import Pagination from "./customPigination";
 
 const searchClient = algoliasearch(
   process.env.REACT_APP_APPLICATION_ID,
@@ -28,18 +28,26 @@ class SearchBuilder extends Component {
   //       this.setState({ refresh: true }, () => {
   //         this.setState({ refresh: false });
   //       }),
-  //     5000
+  //     1000 * 60 * 5
   //   );
+  //   this.props.refreshLikes();
   // }
   // componentWillUnmount() {
   //   clearInterval(this.interval);
   // }
 
+  //refresh by click
   refresh = () => {
     this.setState({ refresh: true }, () => {
       this.setState({ refresh: false });
     });
+    this.props.refreshLikes();
   };
+
+  componentDidMount() {
+    this.refresh();
+  }
+
   render() {
     return (
       <div>
@@ -48,7 +56,7 @@ class SearchBuilder extends Component {
           searchClient={searchClient}
           refresh={this.state.refresh}
         >
-          <Configure hitsPerPage={6} analytics={true} distinct />
+          <Configure hitsPerPage={6} analytics={true} distinct page={1} />
           <div style={{ justifyContent: "center", display: "flex" }}>
             <SortBy
               defaultRefinement="posts"
@@ -76,11 +84,23 @@ class SearchBuilder extends Component {
               ]}
             />
             <SearchBox />
-            <button onClick={this.refresh}> Refresh</button>
+            <button
+              className="button"
+              onClick={this.refresh}
+              style={{
+                color: "black",
+                backgroundColor: "#ecf0f1",
+                border: "1px solid grey",
+                fontSize: "0.84em"
+              }}
+            >
+              {" "}
+              Refresh Content
+            </button>
           </div>
           <CustomHits />
           <Pagination
-            defaultRefinement={1}
+            defaultRefinement={this.props.piginationNumber}
             showFirst
             showPrevious
             showNext
@@ -94,4 +114,18 @@ class SearchBuilder extends Component {
   }
 }
 
-export default SearchBuilder;
+const mapStateToProps = state => {
+  return {
+    piginationNumber: state.persistedReducer.piginationNumber,
+  };
+};
+const mapDispatchToProps = dispatch => {
+  return {
+    refreshLikes: () => dispatch({ type: "REFRESHLIKES" })
+  };
+};
+
+export default connect(
+  mapStateToProps,
+  mapDispatchToProps
+)(SearchBuilder);

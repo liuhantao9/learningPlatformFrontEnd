@@ -34,7 +34,7 @@ const EditorComponent = props => {
     imageMaxSize: 1024 * 1024 * 3,
     attribution: false,
     imageUploadURL: `${YOURSERVER}/api/uploads/images`,
-    saveInterval: 1000 * 15,
+    saveInterval: 1000 * 8,
     requestHeaders: {
       Authorization: `Token ${TOKEN}`
     },
@@ -97,7 +97,7 @@ const EditorComponent = props => {
         xhttp.setRequestHeader("Authorization", `Token ${TOKEN}`);
         xhttp.onreadystatechange = function() {
           //Call a function when the state changes.
-          if (xhttp.readyState == 4 && xhttp.status == 200) {
+          if (xhttp.readyState === 4 && xhttp.status === 200) {
             props.showUpdateTime();
           }
         };

@@ -1,8 +1,6 @@
 import React from "react";
-import axios from "axios";
 import { connect } from "react-redux";
 import SimplifiedPost from "./simplifiedPost";
-import { stat } from "fs";
 
 var faker = require("faker");
 
@@ -45,7 +43,7 @@ class SimplifiedPosts extends React.Component {
       // "deleting" a post should always act upon the "unchangeable props" instead of state
       const updatedLikedPostsDetail = this.props.likedPostsDetail.filter(
         function (lPostDetail) {
-          return lPostDetail._id != objectID;
+          return lPostDetail._id !== objectID;
         }
       );
       const updatedLikedPosts = this.props.likedPosts.filter(likedPost => {
@@ -54,7 +52,7 @@ class SimplifiedPosts extends React.Component {
       // the state and the props may have different value because of the filter
       const updatedLikedPostsDetailState = this.state.likedPostsDetail.filter(
         function (lPostDetail) {
-          return lPostDetail._id != objectID;
+          return lPostDetail._id !== objectID;
         }
       );
       const updatedLikedPostsState = this.state.likedPosts.filter(likedPost => {
@@ -77,7 +75,7 @@ class SimplifiedPosts extends React.Component {
       const updatedMyPostsDetail = this.props.myPostsDetail.filter(function (
         mPostDetail
       ) {
-        return mPostDetail._id != objectID;
+        return mPostDetail._id !== objectID;
       });
       const updatedMyPosts = this.props.myPosts.filter(myPost => {
         return myPost !== objectID;
@@ -85,7 +83,7 @@ class SimplifiedPosts extends React.Component {
       // the state and the props may have different value because of the filter
       const updatedMyPostsDetailState = this.state.myPostsDetail.filter(
         function (mPostDetail) {
-          return mPostDetail._id != objectID;
+          return mPostDetail._id !== objectID;
         }
       );
       const updatedMyPostsState = this.state.myPosts.filter(myPost => {
@@ -114,21 +112,40 @@ class SimplifiedPosts extends React.Component {
       <React.Fragment>
         {simpPosts
           .map(simPost => {
-            return (
-              <SimplifiedPost
-                title={simPost.title}
-                views={faker.random.number()}
-                comments={simPost.comments}
-                tags={simPost.tags}
-                img={
-                  simPost.avatar ||
-                  "https://bulma.io/images/placeholders/128x128.png"
-                }
-                objectID={simPost._id}
-                handleCancelClick={this.handleCancelClick}
-                postType={postType}
-              />
-            );
+            if (simPost.deleted === true) {
+              return (
+                <SimplifiedPost
+                  title={"【Deleted Post】"}
+                  views={"-"}
+                  comments={"-"}
+                  tags={[]}
+                  img={
+                    "https://bulma.io/images/placeholders/128x128.png"
+                  }
+                  objectID={simPost._id}
+                  handleCancelClick={this.handleCancelClick}
+                  postType={postType}
+                  deleted={simPost.deleted}
+                />
+              )
+            } else {
+              return (
+                <SimplifiedPost
+                  title={simPost.title}
+                  views={faker.random.number()}
+                  comments={simPost.comments}
+                  tags={simPost.tags}
+                  img={
+                    simPost.avatar ||
+                    "https://bulma.io/images/placeholders/128x128.png"
+                  }
+                  objectID={simPost._id}
+                  handleCancelClick={this.handleCancelClick}
+                  postType={postType}
+                  deleted={simPost.deleted}
+                />
+              )
+            };
           })
           .reverse()}
       </React.Fragment>

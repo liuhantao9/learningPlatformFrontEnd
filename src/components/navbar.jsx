@@ -1,4 +1,4 @@
-import React, { Component } from "react";
+import React from "react";
 import Signup from "./Signup";
 import Login from "./Login";
 import image from "../assets/img/logo1.jpg";
@@ -31,6 +31,15 @@ const Navbar = props => {
     </div>
   );
 
+  const handleScroll = e => {
+    new Promise(resolve => setTimeout(resolve, 200)).then(() => {
+      window.scroll({
+        top: 550,
+        behavior: "auto"
+      });
+    });
+  };
+
   if (props.logIn) {
     status = (
       <div className="navbar-end">
@@ -61,7 +70,7 @@ const Navbar = props => {
         role="navigation"
         aria-label="main navigation"
       >
-        <div className="navbar-brand">
+        <div className="navbar-brand" id="brand">
           <Link
             className="navbar-item"
             style={{ width: "150px", height: "52px", position: "fix" }}
@@ -73,13 +82,18 @@ const Navbar = props => {
 
         <div id="navbarBasicExample" className="navbar-menu">
           <div className="navbar-start left">
-            <a className="navbar-item" href="#about">
+            <Link className="navbar-item" to="/" onClick={handleScroll}>
               About
-            </a>
-
-            <Link className="navbar-item" onClick={props.onSwitchContactModal}>
-              Contact Us
             </Link>
+
+            <button 
+              type="button" 
+              className="navbar-item" 
+              id="contactButton"
+              onClick={props.onSwitchContactModal}
+            >
+              Contact Us
+            </button>
           </div>
           <div className="right">{status}</div>
         </div>

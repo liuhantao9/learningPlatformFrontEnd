@@ -25,6 +25,7 @@ const WithHandler = (WrappedComponent, axios) => {
             error: true,
             errorMessage: error.response.status
           });
+
           return Promise.reject(error);
         }
       );
@@ -54,12 +55,16 @@ const WithHandler = (WrappedComponent, axios) => {
           message = "Please login, login status is expired";
           break;
         case 400:
-          message = "Data not found, please contact us!";
+          message = "Data not found. The author may have deleted the post. If you have questions, please contact us!";
           break;
         case 500:
           message = "Server breaks, please contact us";
+          break;
         case 412:
           message = "Post not successful, please write some content or repost";
+          break;
+        default:
+          break;
       }
 
       const onClose = () => {

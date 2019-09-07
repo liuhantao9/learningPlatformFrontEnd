@@ -27,22 +27,24 @@ const Reply = props => {
   };
 
   const deleteButton = (
-    <a onClick={handleDelete}>
-      <i class="fas fa-backspace" />
-    </a>
+    <button className="button is-white" onClick={handleDelete}>
+      <i className="fas fa-backspace" />
+    </button>
   );
 
   return (
     <div className="content">
-      <div className="level" style={{ marginBottom: "0px" }}>
-        <strong>{props.reply.username}</strong>
+      <div className="level" style={{ marginBottom: "0px", fontSize: "0.8em" }}>
+        <strong>
+          <h5 style={{ display: "inline" }}>{props.reply.username}</h5>
+        </strong>
         {props.reply.userID === props.userId ? deleteButton : null}
       </div>
       <span>
         {props.reply.body}
         <br />
         <small>
-          <a>{`Like ${props.reply.like}`}</a> ·{" "}
+          {" "}
           {elapsed(new Date().getTime() - props.reply.post_date_timestamp)} Ago
         </small>
       </span>
