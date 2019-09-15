@@ -2,12 +2,19 @@ import React, { Component } from "react";
 import Modal from "react-responsive-modal";
 import { Link } from "react-router-dom";
 
+
 const WithHandler = (WrappedComponent, axios) => {
   return class extends Component {
     state = {
       errorMessage: "",
-      error: false
+      error: false,
+      modalMaxWidth: "30%"
     };
+
+    componentDidMount() {
+      window.addEventListener("resize", this.resize.bind(this));
+      this.resize()
+    }
 
     componentWillMount() {
       // Add a request interceptor
@@ -38,15 +45,23 @@ const WithHandler = (WrappedComponent, axios) => {
       axios.interceptors.response.eject(this.resInterceptor);
     }
 
+    resize() {
+      if (window.innerWidth <= 650) {
+        this.setState({ modalMaxWidth: "90%" })
+      } else if (window.innerWidth <= 1000) {
+        this.setState({ modalMaxWidth: "50%" })
+      } else {
+        this.setState({ modalMaxWidth: "30%" })
+      }
+    }
+
     render() {
       const modalBg = {
         modal: {
           background: "white ",
           borderRadius: "3%",
-          maxHeight: "25%",
-          height: "100%",
-          maxWidth: "30%",
-          width: "100%"
+          maxHeight: "100%",
+          maxWidth: this.state.modalMaxWidth,
         }
       };
 
@@ -56,7 +71,8 @@ const WithHandler = (WrappedComponent, axios) => {
           message = "Please login, login status is expired";
           break;
         case 400:
-          message = "Data not found. The author may have deleted the post. If you have questions, please contact us!";
+          message =
+            "Data not found. The author may have deleted the post. If you have questions, please contact us!";
           break;
         case 500:
           message = "Server breaks, please contact us";
@@ -64,7 +80,11 @@ const WithHandler = (WrappedComponent, axios) => {
         case 412:
           message = "Post not successful, please write some content or repost";
           break;
+        case 422:
+          message = "Account not verified, please verify first";
+          break;
         default:
+          message = "Unexpected error occurs. Please report the error to us through contact us";
           break;
       }
 
@@ -90,32 +110,52 @@ const WithHandler = (WrappedComponent, axios) => {
             styles={modalBg}
             onExited={onExited}
           >
-            <div>
-              <section style={{ display: "flex", flexDirection: "column" }}>
-                <span style={{ fontFamily: "sans-serif", fontWeight: "700", fontSize: "20px", textAlign: "center" }}>
-                  <i class="fas fa-exclamation-triangle" style={{ color: "red", fontWeight: "0.5rem", paddingRight: "0.5rem" }}> </i>
-                  Error
-                </span>
-                <br />
-                <div style={{ fontSize: "1.2rem", textAlign: "center", fontWeight: "450" }}>
-                  {message}{" "}
-                </div>
-                <br />
-                <Link
-                  to="/"
-                  className="button is-success"
+            <section style={{ display: "flex", flexDirection: "column" }}>
+              <span
+                style={{
+                  fontFamily: "sans-serif",
+                  fontWeight: "700",
+                  fontSize: "20px",
+                  textAlign: "center"
+                }}
+              >
+                <i
+                  class="fas fa-exclamation-triangle"
                   style={{
-                    width: "30%",
-                    alignSelf: "center"
+                    color: "red",
+                    fontWeight: "0.5rem",
+                    paddingRight: "0.5rem"
                   }}
                 >
-                  OK
-                </Link>
-              </section>
-            </div>
+                  {" "}
+                </i>
+                Error
+                </span>
+              <br />
+              <div
+                style={{
+                  fontSize: "1.2rem",
+                  textAlign: "center",
+                  fontWeight: "450"
+                }}
+              >
+                {message}{" "}
+              </div>
+              <br />
+              <Link
+                to="/"
+                className="button is-success"
+                style={{
+                  width: "30%",
+                  alignSelf: "center"
+                }}
+              >
+                OK
+              </Link>
+            </section>
           </Modal>
           <WrappedComponent {...this.props} />
-        </div>
+        </div >
       );
     }
   };

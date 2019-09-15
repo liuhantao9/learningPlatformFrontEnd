@@ -8,6 +8,7 @@ import Modal from "react-responsive-modal";
 import { connect } from "react-redux";
 import TagSearch from "../searchTags/tagsearch";
 import withHandler from "../UI/ErrorHandler/ErrorHandler";
+import WarningWindow from "./WarningWindow";
 import {
   openDisplay,
   closeDisplay,
@@ -54,7 +55,6 @@ class Publish extends Component {
       }
     };
     axios.get(`/api/users/draft/${this.props.userID}`, headers).then(res => {
-      console.log(res.data);
       this.setState({ content: res.data.content });
     });
   };
@@ -119,10 +119,7 @@ class Publish extends Component {
         ...this.state,
         tagError: true
       });
-    } else if (
-      title.length < 8 ||
-      title.length > 50
-    ) {
+    } else if (title.length < 8 || title.length > 50) {
       this.setState({
         ...this.state,
         titleError: true
@@ -223,6 +220,15 @@ class Publish extends Component {
       );
     }
 
+    const modalBg = {
+      modal: {
+        background: "white ",
+        borderRadius: "3%",
+        maxHeight: "100%",
+        maxWidth: this.state.modalMaxWidth
+      }
+    };
+
     return (
       <React.Fragment>
         <div style={{ width: "80%", margin: "auto auto" }}>
@@ -240,66 +246,68 @@ class Publish extends Component {
             this.successPosted()
           ) : (
             <React.Fragment>
-              <form onSubmit={this.handlePostCheck}>
-                <label>Title</label>
-                <div className="level">
-                  <input
-                    className="input is-rounded"
-                    type="text"
-                    required
-                    placeholder="Title..."
-                    value={this.state.title}
-                    onChange={this.handleTitle}
-                  />
-
-                  <DropDown
-                    lists={["Get Last Draft"]}
-                    funcs={[this.getContent]}
-                  />
-                </div>
-                <div>
-                  <Editor
-                    updateContent={this.updateContent}
-                    value={this.state.content}
-                    userID={this.props.userID}
-                    showUpdateTime={this.showUpdateTime}
-                  />
-                  <span style={{ fontSize: "13px" }}>
-                    {this.state.updateTime
-                      ? `Saved at ${this.state.updateTime}`
-                      : ""}
-                  </span>
-                </div>
-                <br />
-                {selection}
-                <hr />
-                <label>Tags</label>
-                <TagSearch
-                  hitsDisplay={this.props.tagReducer.hitsDisplay}
-                  tags={this.props.tagReducer.tags}
-                  handleSelect={tag => this.props.addTag(tag)}
-                  handleRemoveItem={tag => this.props.removeTag(tag)}
-                  openDisplay={() => this.props.openDisplay()}
-                  closeDisplay={() => this.props.closeDisplay()}
-                  styles={styles}
+              <label>Title</label>
+              <div className="level">
+                <input
+                  className="input is-rounded"
+                  type="text"
+                  required
+                  placeholder="Title..."
+                  value={this.state.title}
+                  onChange={this.handleTitle}
                 />
-                <br />
-                <div className="level-left">
-                  <button
-                    className="button is-primary level-item"
-                    type="submit"
-                  >
-                    Post
-                  </button>
-                  <button
-                    className="button is-primary level-item"
-                    type="button"
-                    onClick={this.handleCancel}
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </form>
+
+                <DropDown
+                  lists={["Get Saved Draft"]}
+                  funcs={[this.getContent]}
+                />
+              </div>
+              <div>
+                <Editor
+                  updateContent={this.updateContent}
+                  value={this.state.content}
+                  userID={this.props.userID}
+                  showUpdateTime={this.showUpdateTime}
+                />
+                <span style={{ fontSize: "13px" }}>
+                  {this.state.updateTime
+                    ? `Saved at ${this.state.updateTime}`
+                    : ""}
+                </span>
+              </div>
+              <br />
+              {selection}
+              <hr />
+              <label>Tags</label>
+              <TagSearch
+                hitsDisplay={this.props.tagReducer.hitsDisplay}
+                tags={this.props.tagReducer.tags}
+                handleSelect={tag => this.props.addTag(tag)}
+                handleRemoveItem={tag => this.props.removeTag(tag)}
+                openDisplay={() => this.props.openDisplay()}
+                closeDisplay={() => this.props.closeDisplay()}
+                styles={styles}
+              />
+              <br />
+              <div className="level" style={{ marginBottom: "2rem" }}>
+                <button
+                  type="submit"
+                  className="button is-primary level-item"
+                  style={{ marginRight: "0.5rem" }}
+                  onClick={this.handlePostCheck}
+                >
+                  Post
+                </button>
+
+                <button
+                  className="button is-primary level-item"
+                  type="button"
+                  style={{ marginLeft: "0.5rem" }}
+                  onClick={this.handleCancel}
+                >
+                  Cancel
+                </button>
+              </div>
             </React.Fragment>
           )}
         </div>
@@ -308,56 +316,39 @@ class Publish extends Component {
           open={this.state.warning}
           onClose={this.onCloseModal}
           center
+          styles={modalBg}
         >
-          <div>
-            <h1>
-              <strong>Warning</strong>
-            </h1>
-            <p style={{ color: "red" }}>Your Post Will Not Be Saved</p>
-            <Link
-              className="button is-link"
-              onClick={this.handlePostCancel}
-              to="/"
-            >
-              Okay, I Got It
-            </Link>
-          </div>
+          <WarningWindow
+            message="Your Post Will Not Be Saved"
+            onCloseModal={this.onCloseModal}
+            buttonType="ToFrontPage"
+          />
         </Modal>
         <Modal
           className="modal-lg"
           open={this.state.tagError}
           onClose={this.onCloseModal}
+          blockScroll={false}
           center
+          styles={modalBg}
         >
-          <div>
-            <h1>
-              <strong>Warning</strong>
-            </h1>
-            <p style={{ color: "red" }}>
-              Please limit the number of the input tags from 1 to 3
-            </p>
-            <button className="button is-link" onClick={this.onCloseModal}>
-              Okay, I Got It
-            </button>
-          </div>
+          <WarningWindow
+            message="Please limit the number of the input tags from 1 to 3"
+            onCloseModal={this.onCloseModal}
+          />
         </Modal>
         <Modal
           className="modal-lg"
           open={this.state.titleError}
           onClose={this.onCloseModal}
+          blockScroll={false}
           center
+          styles={modalBg}
         >
-          <div>
-            <h1>
-              <strong>Warning</strong>
-            </h1>
-            <p style={{ color: "red" }}>
-              Title should have at least 8 characters and at most 50 characters
-            </p>
-            <button className="button is-link" onClick={this.onCloseModal}>
-              Okay, I Got It
-            </button>
-          </div>
+          <WarningWindow
+            message="The title should have at least 8 characters and at most 50 characters"
+            onCloseModal={this.onCloseModal}
+          />
         </Modal>
       </React.Fragment>
     );

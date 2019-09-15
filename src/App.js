@@ -12,7 +12,8 @@ import ResetPasswordPage from "./components/resetpassword/ResetPasswordPage";
 import IdleTimer from "react-idle-timer";
 import { connect } from "react-redux";
 import NavBar from "./components/navbar";
-
+import Warning from "./components/UI/Warning/warning";
+import Confirmation from "./components/confirmation/confirmation";
 class App extends Component {
   constructor(props) {
     super(props);
@@ -37,6 +38,7 @@ class App extends Component {
     return (
       <div>
         <NavBar />
+        <Warning />
         <IdleTimer
           ref={ref => {
             this.idleTimer = ref;
@@ -60,6 +62,11 @@ class App extends Component {
                 <Footer />
               </React.Fragment>
             )}
+          />
+          <Route
+            path="/confirmation"
+            exact
+            component={props => <Confirmation {...props} />}
           />
           <Route
             path="/designer"
