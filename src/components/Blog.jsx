@@ -1,13 +1,9 @@
 import React, { Component } from "react";
-import getTimeFormat from "../utils/getTimeFormat";
+import Navbar from "./navbar";
+import axios from "axios";
 import ReactHtmlParser from "react-html-parser";
 import Comments from "./comment/comments";
 import { connect } from "react-redux";
-import axios from "../axios/axios-blogs";
-import { withRouter } from "react-router";
-import errorBoundary from "./UI/ErrorHandler/ErrorHandler";
-import Share from "./share/share";
-import Flexbox from "flexbox-react";
 
 class Blog extends Component {
   constructor(props) {
@@ -20,11 +16,7 @@ class Blog extends Component {
       comments: [],
       username: "",
       userID: "",
-      content: "",
-      title: "",
-      rawPostData: "",
-      tags: [],
-      enableLike: true
+      content: ""
     };
 
     this.handleLike = this.handleLike.bind(this);
@@ -32,27 +24,28 @@ class Blog extends Component {
 
   componentDidMount = () => {
     axios
-      .get(`/api/posts/${this.props.match.params.id}`, { headers: "" })
+      .get(
+        `${process.env.REACT_APP_BACKEND_SERVER}/api/posts/${
+          this.props.match.params.id
+        }`
+      )
       .then(res => {
+        const date = new Date(res.data.post_date_timestamp);
         this.setState({
           comments: res.data.comments,
-          post_date: getTimeFormat(res.data.post_date_timestamp),
+          post_date: `${date.getMonth() +
+            1}-${date.getDate()}-${date.getFullYear()}`,
           username: res.data.username,
           userID: res.data.userID,
-          content: res.data.content,
-          title: res.data.title,
-          pageID: this.props.match.params.id,
-          rawPostData: res.data,
-          tags: res.data.tags
+          content: res.data.content
         });
-        this.props.getBlog(res.data);
-      });
+      })
+      .catch(err => console.log(err));
   };
 
-  handleLike = () => {
-    //disable the like for a moment
-    this.setState({ enableLike: false });
+  handleLike = type => {
     const token = localStorage.getItem("token");
+    console.log(token);
     const headers = {
       headers: {
         "Content-Type": "application/json",
@@ -60,65 +53,49 @@ class Blog extends Component {
         withCredentials: true
       }
     };
-    const LIKED = this.props.likedPosts.includes(this.props.match.params.id);
 
+    const liked = this.props.likedPosts.includes(this.props.match.params.id);
     //handling likeposts in User route
-    const likePostPromise = LIKED
-      ? axios.delete(
-        `/api/users/likes/${this.props.userID}?postID=${
-        this.props.match.params.id
+
+    liked
+      ? axios
+          .delete(
+            `${process.env.REACT_APP_BACKEND_SERVER}/api/users/likes/${
+              this.props.userID
+            }?postID=${this.props.match.params.id}`,
+            headers
+          )
+          .then(res => console.log(res))
+      : axios.post(
+          `${process.env.REACT_APP_BACKEND_SERVER}/api/users/likes/${
+            this.props.userID
+          }`,
+          { postID: this.props.match.params.id },
+          headers
+        );
+
+    //handling like# in Post route
+    axios
+      .patch(
+        `${process.env.REACT_APP_BACKEND_SERVER}/api/posts/likes/${
+          this.props.match.params.id
         }`,
+        { liked: liked },
         headers
       )
-      : axios.post(
-        `/api/users/likes/${this.props.userID}`,
-        { postID: this.props.match.params.id },
-        headers
-      );
-    //handling like# in Post route
-    const likeNumberPromise = axios.patch(
-      `/api/posts/likes/${this.props.match.params.id}`,
-      { liked: LIKED },
-      headers
-    )
-
-    Promise.all([likeNumberPromise, likePostPromise]).catch(err => {
-      this.props.handleLike(
-        this.props.match.params.id,
-        this.state.rawPostData,
-        !LIKED
-      );
-    });
-    this.props.handleLike(
-      this.props.match.params.id,
-      this.state.rawPostData,
-      LIKED
-    );
-    new Promise(resolve => setTimeout(resolve, 1000)).then(() => {
-      this.setState({ enableLike: true });
-    });
+      .then(res => {
+        this.props.handleLike(this.props.match.params.id, liked);
+      })
+      .catch(err => err);
   };
 
   render() {
-    //handling disabled button
-    const btn = document.getElementById("likeBtn");
-    if (btn) {
-      if (!this.state.enableLike) {
-        btn.setAttribute("disabled", "");
-      } else {
-        btn.removeAttribute("disabled");
-      }
-    }
-    const LIKED = this.props.likedPosts.includes(this.props.match.params.id);
-    console.log(this.state.tags);
-
-    let tagsDisplay = this.state.tags.map(tag => (
-      <li key={tag} style={styles.items}>
-        <Flexbox>{tag}</Flexbox>
-      </li>
-    ));
+    const liked = this.props.likedPosts.includes(this.props.match.params.id);
+    const saved = liked;
     return (
       <React.Fragment>
+        <Navbar />
+
         <section className="hero is-info is-medium is-bold">
           <div className="hero-body">
             <div className="container has-text-centered">
@@ -150,26 +127,45 @@ class Blog extends Component {
                   >
                     {ReactHtmlParser(this.state.content)}
                   </div>
-                  <div>{tagsDisplay}</div>
                   <hr />
 
-                  <div className="level is-mobile">
+                  <div
+                    className="level-left"
+                    style={{
+                      justifyContent: "space-between",
+                      width: "80%",
+                      margin: "3% auto 3% auto"
+                    }}
+                  >
                     <button
-                      className="level-item has-text-centered button "
-                      onClick={this.props.onSwitchShareModal}
+                      className="level-item button "
+                      onClick={() => this.handleLike("shared")}
                     >
                       <span className="icon is-small">
                         <i className="far fa-share-square" aria-hidden="true" />
                       </span>
                     </button>
-
                     <button
-                      id="likeBtn"
-                      className={`level-item has-text-centered button ${
-                        LIKED ? " is-success" : ""
-                        }`}
+                      className={
+                        saved
+                          ? "level-item button is-success"
+                          : "level-item button"
+                      }
+                      aria-label="retweet"
+                      onClick={() => this.handleLike("saved")}
+                    >
+                      <span className="icon is-small">
+                        <i className="far fa-save" aria-hidden="true" />
+                      </span>
+                    </button>
+                    <button
+                      className={
+                        liked
+                          ? "level-item button is-success"
+                          : "level-item button"
+                      }
                       aria-label="like"
-                      onClick={this.state.enableLike ? this.handleLike : null}
+                      onClick={() => this.handleLike("liked")}
                     >
                       <span className="icon is-small">
                         <i className="far fa-thumbs-up" aria-hidden="true" />
@@ -178,18 +174,11 @@ class Blog extends Component {
                   </div>
                   <hr />
                 </div>
-                <div id="comment" style={{
-                  paddingRight: "3%",
-                  paddingLeft: "3%",
-                  paddingBottom: "2%"
-                }}>
-                  <Comments blogID={this.props.match.params.id} />
-                </div>
+                <Comments comments={this.state.comments} />
               </div>
             </div>
           </section>
         </div>
-        <Share pageID={this.state.pageID} title={this.state.title} />
       </React.Fragment>
     );
   }
@@ -197,46 +186,19 @@ class Blog extends Component {
 
 const mapStateToProps = state => {
   return {
-    userID: state.persistedReducer.userID,
-    likedPosts: state.persistedReducer.likedPosts,
-    shareOpen: state.persistedReducer.shareOpen,
-    loggedIn: state.persistedReducer.loggedIn
+    userID: state.userID,
+    likedPosts: state.likedPosts
   };
 };
 
 const mapDispatchToProps = dispatch => {
   return {
-    getBlog: blog => dispatch({ type: "GETBLOG", blog: blog }),
-    onSwitchShareModal: () => dispatch({ type: "SHAREMODAL" }),
-    handleLike: (id, rawPostData, liked) =>
-      dispatch({
-        type: "HANDLELIKEPOSTS",
-        id: id,
-        rawPostData: rawPostData,
-        liked: liked
-      })
+    handleLike: (id, liked) =>
+      dispatch({ type: "HANDLELIKE", id: id, liked: liked })
   };
 };
 
-export default errorBoundary(
-  withRouter(
-    connect(
-      mapStateToProps,
-      mapDispatchToProps
-    )(Blog)
-  ),
-  axios
-);
-
-const styles = {
-  items: {
-    display: "inline-block",
-    padding: "5px",
-    border: "none",
-    backgroundColor: "#cfcece",
-    fontFamily: "Helvetica, sans-serif",
-    borderRadius: "5px",
-    marginRight: "5px",
-    cursor: "default"
-  }
-};
+export default connect(
+  mapStateToProps,
+  mapDispatchToProps
+)(Blog);

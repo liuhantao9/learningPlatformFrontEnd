@@ -1,12 +1,11 @@
 import React from "react";
 import { connectHits } from "react-instantsearch-dom";
 import Posts from "../components/posts";
-import { connect } from "react-redux";
+import { store } from "../store/configureStore";
 
-const Hits = ({ hits, handleLikes }) => {
+const Hits = ({ hits }) => {
   if (hits && hits.length > 0) {
-    console.log(hits);
-    handleLikes(hits);
+    store.dispatch({ type: "GETHITS", hits: hits });
     return <Posts posts={hits} />;
   }
   return null;
@@ -14,13 +13,4 @@ const Hits = ({ hits, handleLikes }) => {
 
 const CustomHits = connectHits(Hits);
 
-const mapDispatchToProps = dispatch => {
-  return {
-    handleLikes: hits => dispatch({ type: "HANDLELIKE", hits: hits })
-  };
-};
-
-export default connect(
-  null,
-  mapDispatchToProps
-)(CustomHits);
+export default CustomHits;

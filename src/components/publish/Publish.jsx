@@ -1,20 +1,15 @@
-import axios from "../../axios/axios-blogs";
+import axios from "axios";
 import React, { Component } from "react";
 import Editor from "../editor/Editor";
 import { Link } from "react-router-dom";
+import image from "../../assets/img/logo.jpg";
 import DropDown from "../dropdown/dropdown";
 import Spinner from "../UI/Spinner/Spinner";
 import Modal from "react-responsive-modal";
 import { connect } from "react-redux";
-import TagSearch from "../searchTags/tagsearch";
-import withHandler from "../UI/ErrorHandler/ErrorHandler";
-import {
-  openDisplay,
-  closeDisplay,
-  addTag,
-  removeTag,
-  handlePosted
-} from "../../actions/tagActions";
+import TagSearch from "../searchTags/tagsearch"
+import { openDisplay, closeDisplay, addTag, removeTag } from "../../actions/tagActions"
+import Tag from "../commons/tag";
 
 class Publish extends Component {
   constructor(props) {
@@ -26,111 +21,40 @@ class Publish extends Component {
       posted: false,
       content: "",
       title: "",
-      tagError: false,
-      titleError: false,
-      updateTime: ""
     };
 
-    this.handlePostCheck = this.handlePostCheck.bind(this);
-    this.handleFinalPost = this.handleFinalPost.bind(this);
+    this.handlePost = this.handlePost.bind(this);
     this.successPosted = this.successPosted.bind(this);
     this.updateContent = this.updateContent.bind(this);
-    this.getContent = this.getContent.bind(this);
-    this.showUpdateTime = this.showUpdateTime.bind(this);
   }
 
-  showUpdateTime = () => {
-    const currTime = new Date().toTimeString();
-    this.setState({ updateTime: currTime });
-  };
-
-  getContent = () => {
+  handlePost() {
     const token = localStorage.getItem("token");
-    const headers = {
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Token ${token}`,
-        withCredentials: true
-      }
-    };
-    axios.get(`/api/users/draft/${this.props.userID}`, headers).then(res => {
-      console.log(res.data);
-      this.setState({ content: res.data.content });
-    });
-  };
 
-  handleFinalPost = async () => {
     const post = {
       author: this.props.username,
       title: this.state.title,
       content: this.state.content,
-      tags: this.props.tagReducer.tags || [],
-      userId: this.props.userID,
-      avatar:
-        this.props.avatar || "https://bulma.io/images/placeholders/128x128.png"
+      tags: this.state.tags || []
     };
     this.setState({ loading: true });
-    const token = localStorage.getItem("token");
+
     const headers = {
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Token ${token}`,
-        withCredentials: true
+        Authorization: `Token ${token}`
       }
     };
     axios
-      .post("/api/posts", post, headers)
+      .post(`${process.env.REACT_APP_BACKEND_SERVER}/api/posts`, post, headers)
       .then(res => {
-        axios
-          .post(
-            `/api/users/myPosts/${this.props.userID}`,
-            { postID: res.data._id },
-            headers
-          )
-          .then(res => {
-            //cannot divide the call into two setState calls
-            this.setState({ loading: false, posted: true });
-          })
-          .catch(err => {
-            console.log(err);
-            this.setState({ loading: false });
-          });
-        var updatedMyPosts = [...this.props.myPosts];
-        updatedMyPosts.push(res.data._id);
-        var updatedMyPostsDetail = [...this.props.myPostsDetail];
-        updatedMyPostsDetail.push(res.data);
-        this.props.handleUpdatedMyPosts(updatedMyPostsDetail, updatedMyPosts);
+        console.log(res);
       })
       .catch(err => {
-        this.setState({ loading: false });
+        console.log(err);
       });
-
-    this.props.handlePosted();
-  };
-
-  handlePostCheck = e => {
-    e.preventDefault();
-    const title = this.state.title.trim();
-    if (
-      this.props.tagReducer.tags.length === 0 ||
-      this.props.tagReducer.tags.length >= 4
-    ) {
-      this.setState({
-        ...this.state,
-        tagError: true
-      });
-    } else if (
-      title.length < 8 ||
-      title.length > 50
-    ) {
-      this.setState({
-        ...this.state,
-        titleError: true
-      });
-    } else {
-      this.handleFinalPost();
-    }
-  };
+    this.setState({ posted: true, loading: false });
+  }
 
   updateContent = value => {
     this.setState({ content: value });
@@ -140,24 +64,42 @@ class Publish extends Component {
     this.setState({ warning: true });
   };
 
-  handlePostCancel = () => {
-    this.props.handlePosted();
+  onCloseModal = () => {
+    this.setState({ warning: false });
   };
 
-  onCloseModal = () => {
-    this.setState({
-      ...this.state,
-      warning: false,
-      tagError: false,
-      titleError: false
-    });
-  };
+  // openDisplay = () => {
+  //   this.setState({ hitsDisplay: true })
+  // }
+
+  // closeDisplay = () => {
+  //   this.setState({ hitsDisplay: false })
+  // }
+
+  // handleRemoveItem = (target) => {
+  //   this.setState(state => ({
+  //     tags: state.tags.filter((tag) => tag !== target)
+  //   }));
+  // }
+
+  // handleSelect = value => {
+  //   if (this.state.tags.indexOf(value) === -1) {
+  //     this.setState(prevState => ({ 
+  //       tags:[...prevState.tags, value]
+  //     }));
+  //   };
+  // }
+
+  // handleTags = e => {
+  //   e.preventDefault();
+  //   this.setState({ tags: e.target.value });
+  // };
 
   handleTitle = e => {
     e.preventDefault();
     this.setState({ title: e.target.value });
   };
-
+  
   successPosted() {
     return (
       <div
@@ -184,7 +126,7 @@ class Publish extends Component {
           Successfully Posted
         </p>
         <Link
-          to="/"
+          to="/index"
           className="button is-success"
           style={{
             marginTop: "10%",
@@ -199,106 +141,85 @@ class Publish extends Component {
   }
 
   render() {
-    let inputTags = this.props.tagReducer.tags.map(tag => (
-      <li key={tag} style={styles.items}>
-        {tag}
-        <button onClick={() => this.props.removeTag(tag)}>(x)</button>
-      </li>
-    ));
 
-    let selection = <div />;
+    let submit = (
+      <div class="level-left">
+        <button
+          className="button is-primary level-item"
+          type="submit"
+        >
+          Post
+        </button>
+        <button
+          className="button is-primary level-item"
+          onClick={this.handleCancel}
+        >
+          Cancel
+        </button>
+      </div>
+    )
 
-    if (this.props.tagReducer.tags.length === 0) {
-      selection = (
-        <div>
-          <br />
-        </div>
-      );
-    } else {
-      selection = (
-        <div>
-          {inputTags}
-          <br />
-        </div>
-      );
+    if (this.state.hitsDisplay) {
+      submit = (
+        <div></div>
+      )
     }
 
     return (
       <React.Fragment>
+        <div>
+          <nav
+            className="navbar"
+            role="navigation"
+            aria-label="main navigation"
+          >
+            <div className="navbar-brand">
+              <div className="navbar-item">
+                <Link to="/index">
+                  <img src={image} width="112" height="48" alt="logo" />
+                </Link>
+              </div>
+            </div>
+
+            <div id="navbarBasicExample" className="navbar-menu">
+              <div className="navbar-start" />
+              <DropDown lists={["Save", "Draft"]} />
+            </div>
+          </nav>
+        </div>
         <div style={{ width: "80%", margin: "auto auto" }}>
           {this.state.loading ? (
-            <div
-              style={{
-                textAlign: "center",
-                paddingTop: "25%",
-                paddingBottom: "25%"
-              }}
-            >
-              <Spinner />
-            </div>
+            <Spinner />
           ) : this.state.posted ? (
             this.successPosted()
           ) : (
             <React.Fragment>
-              <form onSubmit={this.handlePostCheck}>
+              <form onSubmit={this.handlePost}>
                 <label>Title</label>
-                <div className="level">
-                  <input
-                    className="input is-rounded"
-                    type="text"
-                    required
-                    placeholder="Title..."
-                    value={this.state.title}
-                    onChange={this.handleTitle}
-                  />
-
-                  <DropDown
-                    lists={["Get Last Draft"]}
-                    funcs={[this.getContent]}
-                  />
-                </div>
-                <div>
+                <input
+                  className="input is-rounded"
+                  type="text"
+                  required
+                  value={this.state.title}
+                  onChange={this.handleTitle}
+                />
+                <div style={{ margin: "auto auto" }}>
                   <Editor
                     updateContent={this.updateContent}
                     value={this.state.content}
-                    userID={this.props.userID}
-                    showUpdateTime={this.showUpdateTime}
                   />
-                  <span style={{ fontSize: "13px" }}>
-                    {this.state.updateTime
-                      ? `Saved at ${this.state.updateTime}`
-                      : ""}
-                  </span>
                 </div>
-                <br />
-                {selection}
-                <hr />
                 <label>Tags</label>
                 <TagSearch
                   hitsDisplay={this.props.tagReducer.hitsDisplay}
                   tags={this.props.tagReducer.tags}
-                  handleSelect={tag => this.props.addTag(tag)}
-                  handleRemoveItem={tag => this.props.removeTag(tag)}
+                  handleSelect={(tag) => this.props.addTag(tag)}
+                  handleRemoveItem={(tag) => this.props.removeTag(tag)}
                   openDisplay={() => this.props.openDisplay()}
                   closeDisplay={() => this.props.closeDisplay()}
                   styles={styles}
                 />
-                <br />
-                <div className="level-left">
-                  <button
-                    className="button is-primary level-item"
-                    type="submit"
-                  >
-                    Post
-                  </button>
-                  <button
-                    className="button is-primary level-item"
-                    type="button"
-                    onClick={this.handleCancel}
-                  >
-                    Cancel
-                  </button>
-                </div>
+                {submit}
               </form>
             </React.Fragment>
           )}
@@ -314,49 +235,9 @@ class Publish extends Component {
               <strong>Warning</strong>
             </h1>
             <p style={{ color: "red" }}>Your Post Will Not Be Saved</p>
-            <Link
-              className="button is-link"
-              onClick={this.handlePostCancel}
-              to="/"
-            >
+            <Link className="button is-link" to="/index">
               Okay, I Got It
             </Link>
-          </div>
-        </Modal>
-        <Modal
-          className="modal-lg"
-          open={this.state.tagError}
-          onClose={this.onCloseModal}
-          center
-        >
-          <div>
-            <h1>
-              <strong>Warning</strong>
-            </h1>
-            <p style={{ color: "red" }}>
-              Please limit the number of the input tags from 1 to 3
-            </p>
-            <button className="button is-link" onClick={this.onCloseModal}>
-              Okay, I Got It
-            </button>
-          </div>
-        </Modal>
-        <Modal
-          className="modal-lg"
-          open={this.state.titleError}
-          onClose={this.onCloseModal}
-          center
-        >
-          <div>
-            <h1>
-              <strong>Warning</strong>
-            </h1>
-            <p style={{ color: "red" }}>
-              Title should have at least 8 characters and at most 50 characters
-            </p>
-            <button className="button is-link" onClick={this.onCloseModal}>
-              Okay, I Got It
-            </button>
           </div>
         </Modal>
       </React.Fragment>
@@ -366,12 +247,8 @@ class Publish extends Component {
 
 const mapStateToProps = state => {
   return {
-    username: state.persistedReducer.username,
-    tagReducer: state.tagReducer,
-    userID: state.persistedReducer.userID,
-    myPosts: state.persistedReducer.myPosts,
-    myPostsDetail: state.persistedReducer.myPostsDetail,
-    avatar: state.persistedReducer.avatar
+    username: state.username,
+    tagReducer: state.tagReducer
   };
 };
 
@@ -383,29 +260,20 @@ const mapDispatchToProps = dispatch => {
     closeDisplay: () => {
       dispatch(closeDisplay());
     },
-    addTag: tag => {
+    addTag: (tag) => {
       dispatch(addTag(tag));
     },
-    removeTag: tag => {
+    removeTag: (tag) => {
       dispatch(removeTag(tag));
-    },
-    handlePosted: () => {
-      dispatch(handlePosted());
-    },
-    handleUpdatedMyPosts: (updatedMyPostsDetail, updatedMyPosts) =>
-      dispatch({
-        type: "USERMYPOSTSUPDATED",
-        myPostsDetail: updatedMyPostsDetail,
-        myPosts: updatedMyPosts
-      })
-  };
-};
+    }
+  }
+}
 
 const styles = {
   container: {
-    border: "1px solid #ddd",
-    padding: "5px",
-    borderRadius: "5px"
+    border: '1px solid #ddd',
+    padding: '5px',
+    borderRadius: '5px',
   },
 
   hitStyle: {
@@ -413,40 +281,34 @@ const styles = {
   },
 
   input: {
-    outline: "none",
-    border: "none",
-    fontSize: "14px",
-    fontFamily: "Helvetica, sans-serif"
+    outline: 'none',
+    border: 'none',
+    fontSize: '14px',
+    fontFamily: 'Helvetica, sans-serif'
   },
 
   items: {
-    display: "inline-block",
-    padding: "2px",
-    border: "1px solid blue",
-    fontFamily: "Helvetica, sans-serif",
-    borderRadius: "5px",
-    marginRight: "5px",
-    cursor: "pointer"
+    display: 'inline-block',
+    padding: '2px',
+    border: '1px solid blue',
+    fontFamily: 'Helvetica, sans-serif',
+    borderRadius: '5px',
+    marginRight: '5px',
+    cursor: 'pointer'
   },
-
+  
   hit: {
-    width: "30%",
-    height: "10%",
-    float: "left",
-    marginBottom: "10px",
-    borderBottom: "solid 1px #eee",
-    margin: "0.5%",
-    border: "solid 1px #eee",
-    boxShadow: "0 0 3px #f6f6f6",
-    position: "relative",
-    fontSize: "14px"
+    width: '30%',
+    height: '10%',
+    float: 'left',
+    marginBottom: '10px',
+    borderBottom: 'solid 1px #eee',
+    margin: '0.5%',
+    border: 'solid 1px #eee',
+    boxShadow: '0 0 3px #f6f6f6',
+    position: 'relative',
+    fontSize: '14px'
   }
-};
+}
 
-export default withHandler(
-  connect(
-    mapStateToProps,
-    mapDispatchToProps
-  )(Publish),
-  axios
-);
+export default connect(mapStateToProps, mapDispatchToProps)(Publish);

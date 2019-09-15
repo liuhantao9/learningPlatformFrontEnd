@@ -25,10 +25,3 @@ export function removeTag(tag) {
     payload: tag
   }
 }
-
-export function handlePosted() {
-  return {
-    type: "HANDLE_POSTED",
-    payload: null
-  }
-}
